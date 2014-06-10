@@ -49,7 +49,10 @@ public class Timer
 			elapsedTime = 0;
 			
 			seconds += 1;
-			if(printTimeFlag) {Gdx.app.log("Time Alert: ", seconds + " second(s) have passed");}
+			if(seconds == 30)
+			{
+				if(printTimeFlag) {Gdx.app.log("Time Alert: ", seconds + " second(s) have passed");}
+			}
 			
 			if(seconds >= 60)
 			{

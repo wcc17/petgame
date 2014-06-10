@@ -167,7 +167,8 @@ public class AttributesManager
 	{
 		Gdx.app.log("DEBUG", "preparing notifications!");
 		
-		int fourthPercentileStart = 36;		//this is where the 4th section of the attribute bar is
+		int attributeNearFourthPercentile = 36;		//this is where the 4th section of the attribute bar is
+		int attributeNearZero = 10;			//user will be notified when attribute is close to zero
 		
 		//current attribute values
 		Gdx.app.log("DEBUG", "Hunger value: " + hungerAttribute.getValue());
@@ -179,12 +180,20 @@ public class AttributesManager
 		
 		for(int i = 0; i < attributesArray.length; i++)
 		{
-			int valueToGo = attributesArray[i].getValue() - fourthPercentileStart;
-			Gdx.app.log("DEBUG", attributesArray[i].getName() + " value to go: " + valueToGo);
+			int valueToGoUntilFourthPercentile = attributesArray[i].getValue() - attributeNearFourthPercentile;
+			int valueToGoUntilNearZero = attributesArray[i].getValue() - attributeNearZero;
+			Gdx.app.log("DEBUG", attributesArray[i].getName() + 
+					" value to go until fourth percentile: " + valueToGoUntilFourthPercentile);
+			Gdx.app.log("DEBUG", attributesArray[i].getName() +
+					" value to go until near zero: " + valueToGoUntilNearZero);
 			
-			valueToGo /= 3;
+			
+			valueToGoUntilFourthPercentile /= 3;
+			valueToGoUntilNearZero /= 3;
 			Gdx.app.log("DEBUG", "Number of times " + attributesArray[i].getName() + "will need to be taken away" +
-					"before the 4th percentile: " + valueToGo);
+					"before the 4th percentile: " + valueToGoUntilFourthPercentile);
+			Gdx.app.log("DEBUG", "Number of times " + attributesArray[i].getName() + "will need to be taken away" +
+					"before near zero: " + valueToGoUntilNearZero);
 			
 			float timeUntilChange = 0;
 			float changeRate = 0;
@@ -200,27 +209,42 @@ public class AttributesManager
 				changeRate = sleepChangeRate;
 			}
 			
-			int minutesToGo = (int) (valueToGo * (timeUntilChange - (changeRate * timeUntilChange)));
-			Gdx.app.log("DEBUG", "minutes until " + attributesArray[i].getName() + " notification should hit: " + minutesToGo);
+			int minutesToGoUntilFourthPercentile = (int) (valueToGoUntilFourthPercentile * (timeUntilChange 
+					- (changeRate * timeUntilChange)));
+			int minutesToGoUntilNearZero = (int) (valueToGoUntilNearZero * (timeUntilChange 
+					- (changeRate * timeUntilChange)));
+			Gdx.app.log("DEBUG", "minutes until " + attributesArray[i].getName() + 
+					" fourth percentile notification should hit: " + minutesToGoUntilFourthPercentile);
+			Gdx.app.log("DEBUG", "minutes until " + attributesArray[i].getName() +
+					" near zero notification should hit: " + minutesToGoUntilNearZero);
 			
 			//for now will just use this check. if minutesToGo is 0, that means that the pet is already at 
 			//36 or below, so no notifications will be prepared.
-			if(minutesToGo > 0)
+			if(minutesToGoUntilFourthPercentile > 0)
 			{
-				Gdx.app.log("DEBUG", attributesArray[i].getName() + " notification to be deployed in " + minutesToGo);
-				
+				Gdx.app.log("DEBUG", attributesArray[i].getName() 
+						+ " notification to be deployed in " + minutesToGoUntilFourthPercentile);
 				String message = "";
 				
 				if(attributesArray[i].getName() == "hunger")
-				{
-					message = this.game.ownerName + "! " + this.game.petName + " is very hungry! Come feed it!";
-				}
+					message = this.game.ownerName + "! " + this.game.petName + " is hungry. Come feed it.";
 				else if(attributesArray[i].getName() == "sleep")
-				{
-					message = this.game.ownerName + "! " + this.game.petName + " is very sleepy! Come tell it to sleep";
-				}
+					message = this.game.ownerName + "! " + this.game.petName + " is very sleepy. Come tell it to sleep.";
 				
-				this.game.notification.deployNotification(0, minutesToGo, 0, 0, message);
+				this.game.notification.deployNotification(0, minutesToGoUntilFourthPercentile, 0, 0, message, this.game);
+			}
+			if(minutesToGoUntilNearZero > 0)
+			{
+				Gdx.app.log("DEBUG", attributesArray[i].getName()
+						+ " notification to be deployed in " + minutesToGoUntilNearZero);
+				String message = "";
+				
+				if(attributesArray[i].getName() == "hunger")
+					message = this.game.ownerName + "! " + this.game.petName + " is extremely hungry. Come feed it or it might not make it.";
+				else if(attributesArray[i].getName() == "sleep")
+					message = this.game.ownerName + "! " + this.game.petName + " is very sleepy. Come tell it to sleep or it might not make it.";
+				
+				this.game.notification.deployNotification(0, minutesToGoUntilNearZero, 0, 0, message, this.game);
 			}
 		}
 	}
@@ -266,8 +290,8 @@ public class AttributesManager
 		sleepChangeRate = game.getSaveData().getFloat("sleep_change_rate");
 		hungerAccumulationValue = game.getSaveData().getInteger("hunger_accumulation_value");
 		sleepAccumulationValue = game.getSaveData().getInteger("sleep_accumulation_value");
-		timeUntilHungerChange = game.getSaveData().getInteger("time_until_hunger_change");
-		timeUntilSleepChange = game.getSaveData().getInteger("time_until_sleep_change");
+		timeUntilHungerChange = game.getSaveData().getFloat("time_until_hunger_change");
+		timeUntilSleepChange = game.getSaveData().getFloat("time_until_sleep_change");
 		
 		int poop_on_screen = game.getSaveData().getInteger("poop_on_screen");
 		Sprite s;
@@ -299,7 +323,8 @@ public class AttributesManager
 			//throw out seconds, convert hours, days to minutes
 			minute += (hour * 60);
 			minute += ((day * 24) * 60);
-			Gdx.app.log("DEBUG",  "elapsed minutes in attributes manager: " + minute);
+			
+			Gdx.app.log("DEBUG",  "elapsed minutes in attributes manager: " + (minute));
 			
 			Attributes[] attributesArray = new Attributes[2];
 			attributesArray[0] = hungerAttribute;
@@ -325,8 +350,18 @@ public class AttributesManager
 				int actualTimeUntilChange = (int) (timeUntilChange - (changeRate * timeUntilChange));
 				Gdx.app.log("DEBUG", "actual time before one " + attributeName + " changes: " + actualTimeUntilChange);
 				
-				int timesChangedOverTime = (int) (minute / actualTimeUntilChange);
-				Gdx.app.log("DEBUG", "times " + attributeName + " will have changed over time");
+				//DIVISION BY ZERO ERROR HERE, not sure if this is the right way to handle right now
+				int timesChangedOverTime;
+				if(actualTimeUntilChange == 0)
+				{
+					timesChangedOverTime = 0;
+				}
+				else
+				{
+					timesChangedOverTime = (int) (minute / actualTimeUntilChange);
+				}
+				Gdx.app.log("DEBUG", "times " + attributeName + " will have changed over time: " + timesChangedOverTime);
+				
 				
 				int actualValueLost = timesChangedOverTime * 3;
 				Gdx.app.log("DEBUG", "actual amount of " + attributeName + " lost: " + actualValueLost);

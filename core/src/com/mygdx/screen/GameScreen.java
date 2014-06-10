@@ -70,7 +70,7 @@ public class GameScreen implements Screen
 		Gdx.app.log("DEBUG", "GAME SCREEN show METHOD CALLED");
 		
 		//check for save game upon initialization of gameScene and make set variables if so
-		this.game.checkSaveGame();
+		//this.game.checkSaveGame();
 		
 		batch = game.getBatch();
 		

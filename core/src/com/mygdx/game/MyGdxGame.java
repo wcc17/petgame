@@ -3,6 +3,7 @@ package com.mygdx.game;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.mygdx.screen.GameInitScreen;
 import com.mygdx.screen.GameScreen;
@@ -25,6 +26,7 @@ public class MyGdxGame extends Game
 	
 	//save game
 	Preferences saveGameData;
+	public long currentNotificationID;
 	
 	//why, its offical save file stuff of course
 	//will probably ahve a date in here eventually u kno wut im sayin
@@ -48,6 +50,13 @@ public class MyGdxGame extends Game
 	 */
 	int currentScreen = 0;
 	
+	int STATE_CURRENT;
+	int STATE_CREATE = 0;
+	int STATE_RENDER = 1;
+	int STATE_RESUME = 2;
+	int STATE_PAUSE = 3;
+	int STATE_DISPOSE = 4;
+	
 	public MyGdxGame(Notification n)
 	{
 		notification = n;
@@ -56,6 +65,8 @@ public class MyGdxGame extends Game
 	@Override
 	public void create()
 	{
+		STATE_CURRENT = STATE_CREATE;
+		
 		Gdx.app.log("DEBUG", "MAIN GAME create METHOD CALLED");
 		mainTimer = new Timer(System.currentTimeMillis(), true);
 		
@@ -90,6 +101,7 @@ public class MyGdxGame extends Game
 	@Override
 	public void render()
 	{
+		STATE_CURRENT = STATE_RENDER;
 		super.render();
 	}
 	
@@ -97,8 +109,19 @@ public class MyGdxGame extends Game
 	public void resume()
 	{
 		Gdx.app.log("DEBUG", "MAIN GAME resume METHOD CALLED");
+		STATE_CURRENT = STATE_RESUME;
 		
-		checkSaveGame();
+		//on android, the pause method will stop the timer from running. on desktop it does not
+		//have not checked ios yet
+		if(Gdx.app.getType() == ApplicationType.Android)
+		{
+			checkSaveGame();
+			
+			if(this.getScreen() == gameScreen)
+			{
+				gameScreen.getGameScreenData();
+			}
+		}
 		
 		//PENDING NOTIFICATIONS NEED TO BE CLEARED HERE
 		notification.clearNotifications();
@@ -108,6 +131,7 @@ public class MyGdxGame extends Game
 	public void pause()
 	{
 		Gdx.app.log("DEBUG", "MAIN GAME pause METHOD CALLED");
+		STATE_CURRENT = STATE_PAUSE;
 		//saveCurrentGameData();
 		
 		//it kinda looks like on desktop version, pause and dispose are called. 
@@ -119,13 +143,14 @@ public class MyGdxGame extends Game
 		
 		//this stuff used to be in dispose, but desktop version calls pause then dispose
 		//android just calls pause.
-		saveCurrentGameData();
+		saveCurrentGameData(true);
 	}
 	
 	@Override
 	public void dispose()
 	{	
 		Gdx.app.log("DEBUG", "MAIN GAME dispose METHOD CALLED");
+		STATE_CURRENT = STATE_DISPOSE;
 		
 		//disposes of the textures inside the manager
 		attributesManager.dispose();
@@ -136,7 +161,7 @@ public class MyGdxGame extends Game
 	{
 		Gdx.app.log("DEBUG", "MAIN GAME handleScreens METHOD CALLED");
 		
-		saveCurrentGameData();
+		saveCurrentGameData(false);
 		
 		switch(scene)
 		{
@@ -148,12 +173,12 @@ public class MyGdxGame extends Game
 				break;
 			case 2:
 				//game screen
-				checkSaveGame();
+				//checkSaveGame();
 				this.setScreen(gameScreen);
 				break; 
 			case 3:
 				//stats screen
-				checkSaveGame();
+				//checkSaveGame();
 				this.setScreen(statsScreen);
 				break;
 			case 4:
@@ -172,6 +197,7 @@ public class MyGdxGame extends Game
 	public boolean checkSaveGame()
 	{
 		boolean saveGameExists = saveGameData.getBoolean("saveGameExists");
+		Gdx.app.log("DEBUG", "CHECKING SAVE GAME");
 		
 		if(!saveGameExists)
 		{
@@ -181,6 +207,17 @@ public class MyGdxGame extends Game
 		{
 			petName = saveGameData.getString("petName");
 			ownerName = saveGameData.getString("ownerName");
+			
+			if(getSaveData().getBoolean("IDExists"))
+			{
+				currentNotificationID = getSaveData().getLong("currentID");
+			}
+			else
+			{
+				currentNotificationID = 0;
+				getSaveData().putLong("currentID", currentNotificationID);
+				getSaveData().putBoolean("IDExists", true);
+			}
 			
 			if(saveGameData.getBoolean("timeSaved") == true)
 			{
@@ -209,9 +246,9 @@ public class MyGdxGame extends Game
 				x /= 24;
 				day = x;
 				
-				Gdx.app.log("current time as of exit", mainTimer.days + "days, " + mainTimer.hours + "hours, "
+				Gdx.app.log("DEBUG", "current time as of exit: " + mainTimer.days + "days, " + mainTimer.hours + "hours, "
 						+ mainTimer.minutes + "minutes, " + mainTimer.seconds + "seconds.");
-				Gdx.app.log("Elapsed Time Since Exit", day + "days, " + hour + "hours, " + minute + "minutes, " + second + "seconds");
+				Gdx.app.log("DEBUG", "Elapsed Time Since Exit: " + day + "days, " + hour + "hours, " + minute + "minutes, " + second + "seconds");
 				
 				mainTimer.seconds += second;
 				if(mainTimer.seconds >= 60)
@@ -241,7 +278,7 @@ public class MyGdxGame extends Game
 		}
 	}
 	
-	public void saveCurrentGameData()
+	public void saveCurrentGameData(boolean prepareNotifications)
 	{
 		//THIS SHOULD BE CALLED EVERY TIME GAME IS EXITED, NO MATTER WHERE FROM. CHECK WHEN NOT HIGH
 		
@@ -252,10 +289,14 @@ public class MyGdxGame extends Game
 		{
 			saveGameData.putBoolean("timeSaved", true);
 		}
-		else
+		else if(prepareNotifications)
 		{
-			attributesManager.prepareNotifications();
+			//keeps notifications from going off during setup when opening the keyboard pauses the game
+			if(this.getScreen() != gameInitScreen)
+				attributesManager.prepareNotifications();
 		}
+		
+		saveGameData.putLong("currentID", currentNotificationID);
 		
 		saveGameData.putInteger("seconds", mainTimer.seconds);
 		saveGameData.putInteger("minutes", mainTimer.minutes);

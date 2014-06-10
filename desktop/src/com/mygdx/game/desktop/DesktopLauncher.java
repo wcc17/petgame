@@ -30,13 +30,15 @@ class DesktopNotification implements Notification
 	
 	}
 
-	public void deployNotification(int s, int m, int h, int d, String msg)
+	public void deployNotification(int s, int m, int h, int d, String msg, MyGdxGame game)
 	{
+		/**
 		//THE DESKTOP VERSION MAY NOT GET TO HAVE NOTIFICATIONS (AT LEAST NOT WHEN PROGRAM ISN'T RUNNING)
 		telegraph = new Telegraph("Pet Notification", msg,
 				TelegraphType.NOTIFICATION_DONE, WindowPosition.BOTTOMLEFT, 4000);
 		queue = new TelegraphQueue();
 		queue.add(telegraph);
+		**/
 	}
 	
 	public void clearNotifications()

@@ -2,6 +2,8 @@ package com.mygdx.game.android;
 
 import java.io.File;
 
+import com.badlogic.gdx.Gdx;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -39,8 +41,8 @@ public class NotificationService extends Service
    {
        super.onStart(intent, startId);
        
-       notificationMessage = intent.getStringExtra("notification_message_string");
-       notificationFireTimeInMillis = intent.getExtras().getLong("notification_fire_time");
+       notificationMessage = intent.getStringExtra("notification_string_message");
+       Gdx.app.log("DEBUG", notificationMessage);
       
        mManager = (NotificationManager) this.getApplicationContext().getSystemService(this.getApplicationContext().NOTIFICATION_SERVICE);
        Intent intent1 = new Intent(this.getApplicationContext(),AndroidLauncher.class);
@@ -50,7 +52,7 @@ public class NotificationService extends Service
        intent1.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP| Intent.FLAG_ACTIVITY_CLEAR_TOP);
  
        PendingIntent pendingNotificationIntent = PendingIntent.getActivity( this.getApplicationContext(),0, 
-    		   intent1,PendingIntent.FLAG_UPDATE_CURRENT);
+    		   intent1,PendingIntent.FLAG_CANCEL_CURRENT);
        notification.flags |= android.app.Notification.FLAG_AUTO_CANCEL;
        notification.setLatestEventInfo(this.getApplicationContext(), "Pet Notification",
     		   notificationMessage, pendingNotificationIntent);

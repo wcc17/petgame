@@ -3,6 +3,7 @@ package com.mygdx.game.android;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 public class MyReceiver extends BroadcastReceiver
 {
@@ -10,13 +11,11 @@ public class MyReceiver extends BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent)
     {
-    	String notificationMessage = intent.getStringExtra("notification_message_string");
-    	long timeInMillis = intent.getExtras().getLong("notification_fire_time");
+    	String notificationMessage = intent.getStringExtra("notification_string_message");
     	
     	Intent service1 = new Intent(context, NotificationService.class);
     	
-    	service1.putExtra("notification_message_string", notificationMessage);
-    	service1.putExtra("notification_fire_time", timeInMillis);
+    	service1.putExtra("notification_string_message", notificationMessage);
     	
     	context.startService(service1);
     }   
